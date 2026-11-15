@@ -17,6 +17,20 @@ import torch.nn as nn
 class TinyNet(nn.Module):
     def __init__(self, num_classes=5):
         super().__init__()
+        self.features = nn.Sequential(
+             nn.Conv2d(3, 16, kernel_size=3, padding=1),
+             nn.ReLU(),
+             nn.MaxPool2d(2),
+             nn.Conv2d(8, 16, kernel_size=3, padding=1), 
+             nn.ReLU(), 
+             nn.MaxPool2d(2),
+        )
+        
+           
+        self.classifier = nn.Sequential(
+            nn.Linear(16 * 8 * 8, num_classes),
+        )
+
 # Step 1: Define self.features as nn.Sequential with two conv blocks:
 #
 #         Block 1: Conv2d(3→8, kernel_size=3, padding=1) → ReLU → MaxPool2d(2)
@@ -32,6 +46,8 @@ class TinyNet(nn.Module):
 #
 # Implementing the forward method:
     def forward(self, x):
+        x= self.features(x)
+        
 #         Pass x through self.features.
 #         Flatten: x = x.view(x.size(0), -1)
 #           x.size(0) keeps the batch dimension, -1 flattens the rest.
