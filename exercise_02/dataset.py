@@ -25,13 +25,22 @@ SAMPLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "exe
 # Task 1: Define a Transform Pipeline
 # ===========================================================================
 # Create a transforms.Compose() pipeline with three steps:
+
 #   1. Resize images to (32, 32)
 #   2. Convert PIL image to tensor using transforms.ToTensor()
 #   3. Normalize with ImageNet mean=[0.485, 0.456, 0.406]
 #      and std=[0.229, 0.224, 0.225]
-#
+transform = transforms.Compose([
+    transforms.Resize((32,32)),
+    transforms.ToTensor(),
+    transforms.Normalize(
+     mean=[0.485, 0.456, 0.406],
+     std=[0.229, 0.224, 0.225]   
+    ),
+])
+#)
 # Store the result in a variable called 'transform'.
-transform = None
+
 
 
 # ===========================================================================
@@ -52,23 +61,35 @@ class SimpleImageDataset(Dataset):
         #   Step 1: Create a mapping from class name to integer index.
         #           e.g. {"class_a": 0, "class_b": 1} (Hint: Use .enumerate() to get the index)
         #           Store as self.class_to_idx.
-        self.class_to_idx = None
+        self.class_to_idx = {name: i for i, name in enumerate(self.classes)}
         #   Step 2: Build a list of (file_path, label) tuples.
         #           Loop over each class folder, then over each file inside it.
         #           Store the full path and the integer label.
         #           Store as self.samples.
-        self.samples = None
+        self.samples = []
+        for class_name in self.classes:
+            class_folder = os.path.join(root_dir, class_name)
+            for file_name in sorted(os.listdir(class_folder)):
+                full_path = os.path.join(class_folder, file_name)
+                label = self.class_to_idx[class_name]
+                self.samples.append((full_path, label))
 
     def __len__(self):
+        return len(self.samples)
         #   Return the total number of samples.
-        pass
+        
 
     def __getitem__(self, idx):
+        path, label = self.samples[idx]            
+        image = Image.open(path).convert("RGB")    
+        if self.transform is not None:             
+            image = self.transform(image)
+        return image, label  
         #   Step 1: Get the file path and label from self.samples[idx].
         #   Step 2: Open the image with PIL and convert to "RGB".
         #   Step 3: Apply self.transform if it is not None.
         #   Step 4: Return (image, label).
-        pass
+         
 
 if __name__ == "__main__":
     # ===========================================================================
@@ -76,8 +97,13 @@ if __name__ == "__main__":
     # ===========================================================================
     # Step 1: Instantiate SimpleImageDataset with SAMPLE_DIR
     #         and the transform from Task 1.
-    dataset = None
-    dataloader = None
+    dataset = SimpleImageDataset(SAMPLE_DIR, transform=transform)
+    print(len(dataset))          
+    print(dataset.classes)
+    dataloader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=0)
+    images, labels = next(iter(dataloader))
+    print(images.shape)          
+    print(labels) 
     #
     # Step 2: Print len(dataset) and dataset.classes.
     #
@@ -98,6 +124,10 @@ if __name__ == "__main__":
     # Step 3: The pixel values are no longer in [0, 1]. Why?
     #         Write your answer as a comment.
     #         Hint: think about what Normalize() does.
+    image, label = dataset[0]
+    print(image.shape)                       # torch.Size([3, 32, 32])
+    print(image.min().item(), image.max().item())
+    print(label)
     
     
     # ===========================================================================
